@@ -120,31 +120,28 @@ async function downloadAppFromGithub(folderLocations: DownloadLocations, appname
  */
 function printPortConfiguration(answers: Answers) {
     const FRONTEND_PORT_MAP: Record<string, string> = {
-        "react": "3000",
-        "next": "3000",
+        react: "3000",
+        next: "3000",
         "next-app-directory": "3000",
-        "angular": "4200",
-        "vue": "8080",
-        "svelte": "5173",
+        angular: "4200",
+        vue: "8080",
+        svelte: "5173",
     };
 
     const BACKEND_PORT_MAP: Record<string, string> = {
-        "node": "3001",
-        "nest": "3001",
-        "python": "8000",
+        node: "3001",
+        nest: "3001",
+        python: "8000",
         "python-fastapi": "8000",
-        "go": "8083",
+        go: "8083",
         "go-http": "8083",
     };
 
-     const frontendPort = answers.frontend !== undefined 
-        ? (FRONTEND_PORT_MAP as any)[answers.frontend] || "3000" 
-        : "3000";
+    const frontendPort =
+        answers.frontend !== undefined ? (FRONTEND_PORT_MAP as any)[answers.frontend] || "3000" : "3000";
 
-    const backendPort = answers.backend !== undefined 
-        ? (BACKEND_PORT_MAP as any)[answers.backend] || "3001" 
-        : "3001";
-        
+    const backendPort = answers.backend !== undefined ? (BACKEND_PORT_MAP as any)[answers.backend] || "3001" : "3001";
+
     console.log("");
     console.log(chalk.bold.green("Your application is configured to run on:"));
     console.log(`- ${chalk.cyan("Frontend URL:")} http://localhost:${chalk.bold(frontendPort)}`);

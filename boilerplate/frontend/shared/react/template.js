@@ -1,15 +1,21 @@
 import { getAppInfo } from "../../../shared/config/appInfo.js";
 import { thirdPartyLoginProviders } from "../../../backend/shared/config/oAuthProviders.js";
 export const reactRecipeImports = {
-    emailPassword: 'import EmailPassword from "supertokens-auth-react/recipe/emailpassword";\nimport { EmailPasswordPreBuiltUI } from "supertokens-auth-react/recipe/emailpassword/prebuiltui";',
-    thirdParty: 'import ThirdParty from "supertokens-auth-react/recipe/thirdparty";\nimport { ThirdPartyPreBuiltUI } from "supertokens-auth-react/recipe/thirdparty/prebuiltui";',
-    passwordless: 'import Passwordless, { PasswordlessComponentsOverrideProvider } from "supertokens-auth-react/recipe/passwordless";\nimport { PasswordlessPreBuiltUI } from "supertokens-auth-react/recipe/passwordless/prebuiltui";',
+    emailPassword:
+        'import EmailPassword from "supertokens-auth-react/recipe/emailpassword";\nimport { EmailPasswordPreBuiltUI } from "supertokens-auth-react/recipe/emailpassword/prebuiltui";',
+    thirdParty:
+        'import ThirdParty from "supertokens-auth-react/recipe/thirdparty";\nimport { ThirdPartyPreBuiltUI } from "supertokens-auth-react/recipe/thirdparty/prebuiltui";',
+    passwordless:
+        'import Passwordless, { PasswordlessComponentsOverrideProvider } from "supertokens-auth-react/recipe/passwordless";\nimport { PasswordlessPreBuiltUI } from "supertokens-auth-react/recipe/passwordless/prebuiltui";',
     session: 'import Session from "supertokens-auth-react/recipe/session";',
-    multiFactorAuth: 'import MultiFactorAuth from "supertokens-auth-react/recipe/multifactorauth";\nimport { MultiFactorAuthPreBuiltUI } from "supertokens-auth-react/recipe/multifactorauth/prebuiltui";',
-    emailVerification: 'import EmailVerification from "supertokens-auth-react/recipe/emailverification";\nimport { EmailVerificationPreBuiltUI } from "supertokens-auth-react/recipe/emailverification/prebuiltui";',
+    multiFactorAuth:
+        'import MultiFactorAuth from "supertokens-auth-react/recipe/multifactorauth";\nimport { MultiFactorAuthPreBuiltUI } from "supertokens-auth-react/recipe/multifactorauth/prebuiltui";',
+    emailVerification:
+        'import EmailVerification from "supertokens-auth-react/recipe/emailverification";\nimport { EmailVerificationPreBuiltUI } from "supertokens-auth-react/recipe/emailverification/prebuiltui";',
     totp: 'import TOTP from "supertokens-auth-react/recipe/totp";\nimport { TOTPPreBuiltUI } from "supertokens-auth-react/recipe/totp/prebuiltui";',
     multitenancy: 'import Multitenancy from "supertokens-auth-react/recipe/multitenancy";',
-    webauthn: 'import WebAuthn from "supertokens-auth-react/recipe/webauthn";\nimport { WebauthnPreBuiltUI } from "supertokens-auth-react/recipe/webauthn/prebuiltui";',
+    webauthn:
+        'import WebAuthn from "supertokens-auth-react/recipe/webauthn";\nimport { WebauthnPreBuiltUI } from "supertokens-auth-react/recipe/webauthn/prebuiltui";',
 };
 export const reactRecipeInits = {
     emailPassword: () => `EmailPassword.init()`,
@@ -40,11 +46,9 @@ export const reactRecipeInits = {
         const hasOtpPhone = userArguments?.firstfactors?.includes("otp-phone");
         if ((hasLinkEmail || hasOtpEmail) && (hasLinkPhone || hasOtpPhone)) {
             contactMethod = "EMAIL_OR_PHONE";
-        }
-        else if (hasLinkPhone || hasOtpPhone) {
+        } else if (hasLinkPhone || hasOtpPhone) {
             contactMethod = "PHONE";
-        }
-        else {
+        } else {
             contactMethod = "EMAIL";
         }
         const initObj = [`contactMethod: "${contactMethod}"`];
@@ -69,8 +73,7 @@ export const reactRecipeInits = {
                     }
                 }
             });
-        }
-        else {
+        } else {
             availableFirstFactors.push("thirdparty", "emailpassword");
         }
         if (secondFactors && secondFactors.length > 0) {
@@ -142,14 +145,19 @@ export const generateReactTemplate = ({ configType, userArguments, isFullStack }
         recipes.push("thirdParty");
         prebuiltUIs.push(reactPreBuiltUIs.thirdParty);
     }
-    const hasPasswordlessSecondFactors = userArguments?.secondfactors?.some((factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")) || false;
-    const hasPasswordlessFirstFactors = userArguments?.firstfactors?.some((factor) => factor.includes("link-") || factor.includes("otp-")) ||
-        false;
-    if (configType === "passwordless" ||
+    const hasPasswordlessSecondFactors =
+        userArguments?.secondfactors?.some(
+            (factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")
+        ) || false;
+    const hasPasswordlessFirstFactors =
+        userArguments?.firstfactors?.some((factor) => factor.includes("link-") || factor.includes("otp-")) || false;
+    if (
+        configType === "passwordless" ||
         configType === "thirdpartypasswordless" ||
         configType === "all_auth" ||
         hasPasswordlessSecondFactors ||
-        hasPasswordlessFirstFactors) {
+        hasPasswordlessFirstFactors
+    ) {
         recipes.push("passwordless");
         prebuiltUIs.push(reactPreBuiltUIs.passwordless);
     }
@@ -197,40 +205,40 @@ export const generateReactTemplate = ({ configType, userArguments, isFullStack }
     }
     const recipeInits = recipes
         .map((recipe) => {
-        switch (recipe) {
-            case "passwordless":
-                return reactRecipeInits.passwordless(userArguments);
-            case "multiFactorAuth":
-                return reactRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
-            case "session":
-                return reactRecipeInits.session();
-            case "emailVerification":
-                return reactRecipeInits.emailVerification(hasMFA ?? false);
-            case "emailPassword": {
-                const initFunc = reactRecipeInits[recipe];
-                return initFunc();
-            }
-            case "webauthn": {
-                const initFunc = reactRecipeInits[recipe];
-                return initFunc();
-            }
-            case "thirdParty": {
-                const providersToUse = userArguments?.providers
-                    ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
-                    : thirdPartyLoginProviders;
-                return reactRecipeInits.thirdParty(providersToUse);
-            }
-            case "totp":
-            case "multitenancy":
-                const initFunc = reactRecipeInits[recipe];
-                if (typeof initFunc === "function") {
+            switch (recipe) {
+                case "passwordless":
+                    return reactRecipeInits.passwordless(userArguments);
+                case "multiFactorAuth":
+                    return reactRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
+                case "session":
+                    return reactRecipeInits.session();
+                case "emailVerification":
+                    return reactRecipeInits.emailVerification(hasMFA ?? false);
+                case "emailPassword": {
+                    const initFunc = reactRecipeInits[recipe];
                     return initFunc();
                 }
-                throw new Error(`No initializer function found for recipe: ${recipe}`);
-            default:
-                throw new Error(`Unknown recipe encountered: ${recipe}`);
-        }
-    })
+                case "webauthn": {
+                    const initFunc = reactRecipeInits[recipe];
+                    return initFunc();
+                }
+                case "thirdParty": {
+                    const providersToUse = userArguments?.providers
+                        ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
+                        : thirdPartyLoginProviders;
+                    return reactRecipeInits.thirdParty(providersToUse);
+                }
+                case "totp":
+                case "multitenancy":
+                    const initFunc = reactRecipeInits[recipe];
+                    if (typeof initFunc === "function") {
+                        return initFunc();
+                    }
+                    throw new Error(`No initializer function found for recipe: ${recipe}`);
+                default:
+                    throw new Error(`Unknown recipe encountered: ${recipe}`);
+            }
+        })
         .filter(Boolean);
     const template = `
 "use client";
@@ -250,16 +258,18 @@ export function getWebsiteDomain() {
     return websiteUrl;
 }
 
-${configType === "passwordless" ||
-        configType === "thirdpartypasswordless" ||
-        configType === "all_auth" ||
-        configType === "multitenancy"
+${
+    configType === "passwordless" ||
+    configType === "thirdpartypasswordless" ||
+    configType === "all_auth" ||
+    configType === "multitenancy"
         ? `export const styleOverride = \`
 [data-supertokens~=tenants-link] {
     margin-top: 8px;
 }
 \`;`
-        : ""}
+        : ""
+}
 
 export const SuperTokensConfig = {
     appInfo: {
@@ -269,12 +279,14 @@ export const SuperTokensConfig = {
         apiBasePath: "${appInfo.apiBasePath}",
         websiteBasePath: "${appInfo.websiteBasePath}",
     },
-    ${configType === "multitenancy" ? "usesDynamicLoginMethods: true,\n    " : ""}${configType === "passwordless" ||
+    ${configType === "multitenancy" ? "usesDynamicLoginMethods: true,\n    " : ""}${
+        configType === "passwordless" ||
         configType === "thirdpartypasswordless" ||
         configType === "all_auth" ||
         configType === "multitenancy"
-        ? "style: styleOverride,\n    "
-        : ""}
+            ? "style: styleOverride,\n    "
+            : ""
+    }
     recipeList: [
         ${recipeInits.join(",\n        ")}
     ],
@@ -292,7 +304,8 @@ export const recipeDetails = {
 
 export const PreBuiltUIList = [${prebuiltUIs.join(", ")}];
 
-${configType === "multitenancy"
+${
+    configType === "multitenancy"
         ? `
 type Tenant = {
     tenantId: string;
@@ -300,9 +313,11 @@ type Tenant = {
 
 const tenantLoader = async (): Promise<Tenant[]> => {
     try {
-        ${isFullStack
-            ? `const response = await fetch(\`\${getApiDomain()}/api/tenants\`);`
-            : `const response = await fetch(\`\${getApiDomain()}/tenants\`);`}
+        ${
+            isFullStack
+                ? `const response = await fetch(\`\${getApiDomain()}/api/tenants\`);`
+                : `const response = await fetch(\`\${getApiDomain()}/tenants\`);`
+        }
         if (!response.ok) {
             throw new Error(\`Failed to fetch tenants: \${response.statusText}\`);
         }
@@ -408,18 +423,22 @@ const TenantSwitcherFooter = () => {
 };
 
 `
-        : ""}
+        : ""
+}
 
 export const ComponentWrapper = (props: { children: JSX.Element }): JSX.Element => {
     let childrenToRender = props.children;
 
-    ${recipes.includes("passwordless") &&
+    ${
+        recipes.includes("passwordless") &&
         (configType === "passwordless" ||
             configType === "thirdpartypasswordless" ||
             configType === "all_auth" ||
             configType === "multitenancy" ||
-            userArguments?.secondfactors?.some((factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")))
-        ? `childrenToRender = (
+            userArguments?.secondfactors?.some(
+                (factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")
+            ))
+            ? `childrenToRender = (
         <PasswordlessComponentsOverrideProvider
             components={{
                 PasswordlessUserInputCodeFormFooter_Override: ({ DefaultComponent, ...cProps }) => {
@@ -469,15 +488,18 @@ export const ComponentWrapper = (props: { children: JSX.Element }): JSX.Element 
             {props.children}
         </PasswordlessComponentsOverrideProvider>
     );`
-        : ``}
-    ${configType === "multitenancy"
-        ? `return (
+            : ``
+    }
+    ${
+        configType === "multitenancy"
+            ? `return (
         <>
             {childrenToRender}
             <TenantSwitcherFooter />
         </>
     );`
-        : `return childrenToRender;`}
+            : `return childrenToRender;`
+    }
 }`;
     return template;
 };
