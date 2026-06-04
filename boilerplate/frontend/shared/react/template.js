@@ -1,28 +1,24 @@
-import { getAppInfo } from "../../../shared/config/appInfo";
-import { thirdPartyLoginProviders } from "../../../backend/shared/config/oAuthProviders";
+import { getAppInfo } from "../../../shared/config/appInfo.js";
+import { thirdPartyLoginProviders } from "../../../backend/shared/config/oAuthProviders.js";
 export const reactRecipeImports = {
-    emailPassword:
-        'import EmailPassword from "supertokens-auth-react/recipe/emailpassword";\nimport { EmailPasswordPreBuiltUI } from "supertokens-auth-react/recipe/emailpassword/prebuiltui";',
-    thirdParty:
-        'import ThirdParty, { Google, Github, Apple, Twitter } from "supertokens-auth-react/recipe/thirdparty";\nimport { ThirdPartyPreBuiltUI } from "supertokens-auth-react/recipe/thirdparty/prebuiltui";',
-    passwordless:
-        'import Passwordless, { PasswordlessComponentsOverrideProvider } from "supertokens-auth-react/recipe/passwordless";\nimport { PasswordlessPreBuiltUI } from "supertokens-auth-react/recipe/passwordless/prebuiltui";',
+    emailPassword: 'import EmailPassword from "supertokens-auth-react/recipe/emailpassword";\nimport { EmailPasswordPreBuiltUI } from "supertokens-auth-react/recipe/emailpassword/prebuiltui";',
+    thirdParty: 'import ThirdParty from "supertokens-auth-react/recipe/thirdparty";\nimport { ThirdPartyPreBuiltUI } from "supertokens-auth-react/recipe/thirdparty/prebuiltui";',
+    passwordless: 'import Passwordless, { PasswordlessComponentsOverrideProvider } from "supertokens-auth-react/recipe/passwordless";\nimport { PasswordlessPreBuiltUI } from "supertokens-auth-react/recipe/passwordless/prebuiltui";',
     session: 'import Session from "supertokens-auth-react/recipe/session";',
-    multiFactorAuth:
-        'import MultiFactorAuth from "supertokens-auth-react/recipe/multifactorauth";\nimport { MultiFactorAuthPreBuiltUI } from "supertokens-auth-react/recipe/multifactorauth/prebuiltui";',
-    emailVerification:
-        'import EmailVerification from "supertokens-auth-react/recipe/emailverification";\nimport { EmailVerificationPreBuiltUI } from "supertokens-auth-react/recipe/emailverification/prebuiltui";',
+    multiFactorAuth: 'import MultiFactorAuth from "supertokens-auth-react/recipe/multifactorauth";\nimport { MultiFactorAuthPreBuiltUI } from "supertokens-auth-react/recipe/multifactorauth/prebuiltui";',
+    emailVerification: 'import EmailVerification from "supertokens-auth-react/recipe/emailverification";\nimport { EmailVerificationPreBuiltUI } from "supertokens-auth-react/recipe/emailverification/prebuiltui";',
     totp: 'import TOTP from "supertokens-auth-react/recipe/totp";\nimport { TOTPPreBuiltUI } from "supertokens-auth-react/recipe/totp/prebuiltui";',
     multitenancy: 'import Multitenancy from "supertokens-auth-react/recipe/multitenancy";',
+    webauthn: 'import WebAuthn from "supertokens-auth-react/recipe/webauthn";\nimport { WebauthnPreBuiltUI } from "supertokens-auth-react/recipe/webauthn/prebuiltui";',
 };
 export const reactRecipeInits = {
     emailPassword: () => `EmailPassword.init()`,
     thirdParty: (providers) => {
         const providerInitMap = {
-            google: "Google.init()",
-            github: "Github.init()",
-            apple: "Apple.init()",
-            twitter: "Twitter.init()",
+            google: "ThirdParty.Google.init()",
+            github: "ThirdParty.Github.init()",
+            apple: "ThirdParty.Apple.init()",
+            twitter: "ThirdParty.Twitter.init()",
         };
         const providerInits = providers
             .map((p) => providerInitMap[p.id])
@@ -38,19 +34,17 @@ export const reactRecipeInits = {
     },
     passwordless: (userArguments) => {
         let contactMethod = "EMAIL";
-        const hasLinkEmail =
-            userArguments?.firstfactors?.includes("link-email") || userArguments?.secondfactors?.includes("link-email");
-        const hasLinkPhone =
-            userArguments?.firstfactors?.includes("link-phone") || userArguments?.secondfactors?.includes("link-phone");
-        const hasOtpEmail =
-            userArguments?.firstfactors?.includes("otp-email") || userArguments?.secondfactors?.includes("otp-email");
-        const hasOtpPhone =
-            userArguments?.firstfactors?.includes("otp-phone") || userArguments?.secondfactors?.includes("otp-phone");
+        const hasLinkEmail = userArguments?.firstfactors?.includes("link-email");
+        const hasLinkPhone = userArguments?.firstfactors?.includes("link-phone");
+        const hasOtpEmail = userArguments?.firstfactors?.includes("otp-email");
+        const hasOtpPhone = userArguments?.firstfactors?.includes("otp-phone");
         if ((hasLinkEmail || hasOtpEmail) && (hasLinkPhone || hasOtpPhone)) {
             contactMethod = "EMAIL_OR_PHONE";
-        } else if (hasLinkPhone || hasOtpPhone) {
+        }
+        else if (hasLinkPhone || hasOtpPhone) {
             contactMethod = "PHONE";
-        } else {
+        }
+        else {
             contactMethod = "EMAIL";
         }
         const initObj = [`contactMethod: "${contactMethod}"`];
@@ -58,32 +52,7 @@ export const reactRecipeInits = {
             ${initObj.join(",\n            ")}
         })`;
     },
-    session: (hasMFA = false) => {
-        if (!hasMFA) {
-            return `Session.init()`;
-        }
-        return `Session.init({
-            override: {
-                functions: (original) => {
-                    return {
-                        ...original,
-                        getGlobalClaimValidators: (input) => {
-                            const emailVerificationClaimValidator = input.claimValidatorsAddedByOtherRecipes.find(
-                                v => v.id === EmailVerification.EmailVerificationClaim.id
-                            );
-                            if (emailVerificationClaimValidator) {
-                                const filteredValidators = input.claimValidatorsAddedByOtherRecipes.filter(
-                                    v => v.id !== EmailVerification.EmailVerificationClaim.id
-                                );
-                                return [...filteredValidators, emailVerificationClaimValidator];
-                            }
-                            return input.claimValidatorsAddedByOtherRecipes;
-                        }
-                    };
-                }
-            }
-        })`;
-    },
+    session: () => `Session.init()`,
     multiFactorAuth: (firstFactors, secondFactors) => {
         const availableFirstFactors = [];
         if (firstFactors) {
@@ -93,11 +62,15 @@ export const reactRecipeInits = {
             if (firstFactors.includes("thirdparty")) {
                 availableFirstFactors.push("thirdparty");
             }
-            const hasPasswordless = firstFactors.some((f) => f.startsWith("link-") || f.startsWith("otp-"));
-            if (hasPasswordless) {
-                availableFirstFactors.push("passwordless");
-            }
-        } else {
+            firstFactors.forEach((factor) => {
+                if (factor.startsWith("otp-") || factor.startsWith("link-")) {
+                    if (!availableFirstFactors.includes(factor)) {
+                        availableFirstFactors.push(factor);
+                    }
+                }
+            });
+        }
+        else {
             availableFirstFactors.push("thirdparty", "emailpassword");
         }
         if (secondFactors && secondFactors.length > 0) {
@@ -111,22 +84,7 @@ export const reactRecipeInits = {
             const factorIds = secondFactors.map((factor) => factorMapping[factor] || `"${factor}"`).filter(Boolean);
             if (factorIds.length > 0) {
                 return `MultiFactorAuth.init({
-        firstFactors: [${availableFirstFactors.map((f) => `"${f}"`).join(", ")}],
-        override: {
-            functions: (originalImplementation) => ({
-                ...originalImplementation,
-                getMFARequirementsForAuth: () => [
-                    {
-                        oneOf: [
-                            ${factorIds.join(",\n                            ")}
-                        ],
-                    },
-                ],
-                getRequiredSecondaryFactorsForUser: async () => {
-                    return [${factorIds.join(", ")}];
-                },
-            }),
-        }
+        firstFactors: [${availableFirstFactors.map((f) => `"${f}"`).join(", ")}]
     })`;
             }
         }
@@ -137,6 +95,7 @@ export const reactRecipeInits = {
     emailVerification: (hasMFA) => `EmailVerification.init({
         mode: ${hasMFA ? '"OPTIONAL"' : '"REQUIRED"'}
     })`,
+    webauthn: () => `WebAuthn.init()`,
     totp: () => `TOTP.init()`,
     multitenancy: () => `Multitenancy.init({
             override: {
@@ -144,8 +103,10 @@ export const reactRecipeInits = {
                     return {
                         ...oI,
                         getTenantId: async () => {
-                            const tenantIdInStorage = localStorage.getItem("tenantId");
-                            return tenantIdInStorage === null ? undefined : tenantIdInStorage;
+                            if (typeof window !== 'undefined') {
+                                const tenantIdInStorage = localStorage.getItem("tenantId");
+                                return tenantIdInStorage === null ? undefined : tenantIdInStorage;
+                            }
                         },
                     };
                 },
@@ -159,6 +120,7 @@ export const reactPreBuiltUIs = {
     multiFactorAuth: "MultiFactorAuthPreBuiltUI",
     emailVerification: "EmailVerificationPreBuiltUI",
     totp: "TOTPPreBuiltUI",
+    webauthn: "WebauthnPreBuiltUI",
 };
 export const generateReactTemplate = ({ configType, userArguments, isFullStack }) => {
     const appInfo = getAppInfo(isFullStack);
@@ -171,24 +133,23 @@ export const generateReactTemplate = ({ configType, userArguments, isFullStack }
         recipes.push("emailPassword");
         prebuiltUIs.push(reactPreBuiltUIs.emailPassword);
     }
+    if (configType === "webauthn") {
+        recipes.push("webauthn");
+        prebuiltUIs.push(reactPreBuiltUIs.webauthn);
+    }
     const hasThirdPartyFirstFactor = userArguments?.firstfactors?.includes("thirdparty") || false;
     if (configType.includes("thirdparty") || configType === "all_auth" || hasThirdPartyFirstFactor) {
         recipes.push("thirdParty");
         prebuiltUIs.push(reactPreBuiltUIs.thirdParty);
     }
-    const hasPasswordlessSecondFactors =
-        userArguments?.secondfactors?.some(
-            (factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")
-        ) || false;
-    const hasPasswordlessFirstFactors =
-        userArguments?.firstfactors?.some((factor) => factor.includes("link-") || factor.includes("otp-")) || false;
-    if (
-        configType === "passwordless" ||
+    const hasPasswordlessSecondFactors = userArguments?.secondfactors?.some((factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")) || false;
+    const hasPasswordlessFirstFactors = userArguments?.firstfactors?.some((factor) => factor.includes("link-") || factor.includes("otp-")) ||
+        false;
+    if (configType === "passwordless" ||
         configType === "thirdpartypasswordless" ||
         configType === "all_auth" ||
         hasPasswordlessSecondFactors ||
-        hasPasswordlessFirstFactors
-    ) {
+        hasPasswordlessFirstFactors) {
         recipes.push("passwordless");
         prebuiltUIs.push(reactPreBuiltUIs.passwordless);
     }
@@ -210,6 +171,7 @@ export const generateReactTemplate = ({ configType, userArguments, isFullStack }
             "passwordless",
             "multiFactorAuth",
             "emailVerification",
+            "webauthn",
             "totp",
         ];
         allPossibleUIRecipes.forEach((recipeName) => {
@@ -229,42 +191,52 @@ export const generateReactTemplate = ({ configType, userArguments, isFullStack }
         .map((recipe) => reactRecipeImports[recipe])
         .filter(Boolean)
         .join("\n");
+    const additionalImports = [];
+    if (configType === "multitenancy") {
+        additionalImports.push('import { useState, useEffect } from "react";');
+    }
     const recipeInits = recipes
         .map((recipe) => {
-            switch (recipe) {
-                case "passwordless":
-                    return reactRecipeInits.passwordless(userArguments);
-                case "multiFactorAuth":
-                    return reactRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
-                case "session":
-                    return reactRecipeInits.session(hasMFA);
-                case "emailVerification":
-                    return reactRecipeInits.emailVerification(hasMFA ?? false);
-                case "emailPassword": {
-                    const initFunc = reactRecipeInits[recipe];
+        switch (recipe) {
+            case "passwordless":
+                return reactRecipeInits.passwordless(userArguments);
+            case "multiFactorAuth":
+                return reactRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
+            case "session":
+                return reactRecipeInits.session();
+            case "emailVerification":
+                return reactRecipeInits.emailVerification(hasMFA ?? false);
+            case "emailPassword": {
+                const initFunc = reactRecipeInits[recipe];
+                return initFunc();
+            }
+            case "webauthn": {
+                const initFunc = reactRecipeInits[recipe];
+                return initFunc();
+            }
+            case "thirdParty": {
+                const providersToUse = userArguments?.providers
+                    ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
+                    : thirdPartyLoginProviders;
+                return reactRecipeInits.thirdParty(providersToUse);
+            }
+            case "totp":
+            case "multitenancy":
+                const initFunc = reactRecipeInits[recipe];
+                if (typeof initFunc === "function") {
                     return initFunc();
                 }
-                case "thirdParty": {
-                    const providersToUse = userArguments?.providers
-                        ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
-                        : thirdPartyLoginProviders;
-                    return reactRecipeInits.thirdParty(providersToUse);
-                }
-                case "totp":
-                case "multitenancy":
-                    const initFunc = reactRecipeInits[recipe];
-                    if (typeof initFunc === "function") {
-                        return initFunc();
-                    }
-                    console.warn(`No initializer function found for recipe: ${recipe}`);
-                    return null;
-                default:
-                    console.warn(`Unknown recipe encountered: ${recipe}`);
-                    return null;
-            }
-        })
+                throw new Error(`No initializer function found for recipe: ${recipe}`);
+            default:
+                throw new Error(`Unknown recipe encountered: ${recipe}`);
+        }
+    })
         .filter(Boolean);
-    const template = `${imports}
+    const template = `
+"use client";
+
+${imports}
+${additionalImports.join("\n")}
 
 export function getApiDomain() {
     const apiPort = ${appInfo.defaultApiPort};
@@ -278,38 +250,16 @@ export function getWebsiteDomain() {
     return websiteUrl;
 }
 
-${
-    configType === "passwordless" ||
-    configType === "thirdpartypasswordless" ||
-    configType === "all_auth" ||
-    configType === "multitenancy"
+${configType === "passwordless" ||
+        configType === "thirdpartypasswordless" ||
+        configType === "all_auth" ||
+        configType === "multitenancy"
         ? `export const styleOverride = \`
-[data-supertokens~=container] {
-    --palette-background: #ffffff;
-    --palette-inputBackground: #ffffff;
-    --palette-inputBorder: #dddddd;
-    --palette-textTitle: #222222;
-    --palette-textLabel: #222222;
-    --palette-textPrimary: #222222;
-    --palette-error: #ff1717;
-    --palette-textInput: #222222;
-    --palette-textLink: #4949e4;
-    --palette-buttonText: #ffffff;
-    --palette-primary: #4949e4;
-    --palette-success: #41a700;
-
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-    width: 420px;
-    margin: 0 auto;
-    text-align: center;
-}
-
 [data-supertokens~=tenants-link] {
     margin-top: 8px;
 }
 \`;`
-        : ""
-}
+        : ""}
 
 export const SuperTokensConfig = {
     appInfo: {
@@ -319,21 +269,20 @@ export const SuperTokensConfig = {
         apiBasePath: "${appInfo.apiBasePath}",
         websiteBasePath: "${appInfo.websiteBasePath}",
     },
-    ${configType === "multitenancy" ? "usesDynamicLoginMethods: true,\n    " : ""}${
-        configType === "passwordless" ||
+    ${configType === "multitenancy" ? "usesDynamicLoginMethods: true,\n    " : ""}${configType === "passwordless" ||
         configType === "thirdpartypasswordless" ||
         configType === "all_auth" ||
         configType === "multitenancy"
-            ? "style: styleOverride,\n    "
-            : ""
-    }
+        ? "style: styleOverride,\n    "
+        : ""}
     recipeList: [
         ${recipeInits.join(",\n        ")}
     ],
-    getRedirectionURL: async (context: {action: string; newSessionCreated: boolean}) => {
-        if (context.action === "SUCCESS" && context.newSessionCreated) {
+    getRedirectionURL: async (context: any) => {
+        if (context.action === "SUCCESS") {
             return "/dashboard";
         }
+        return undefined;
     },
 };
 
@@ -343,19 +292,138 @@ export const recipeDetails = {
 
 export const PreBuiltUIList = [${prebuiltUIs.join(", ")}];
 
+${configType === "multitenancy"
+        ? `
+type Tenant = {
+    tenantId: string;
+}
+
+const tenantLoader = async (): Promise<Tenant[]> => {
+    try {
+        ${isFullStack
+            ? `const response = await fetch(\`\${getApiDomain()}/api/tenants\`);`
+            : `const response = await fetch(\`\${getApiDomain()}/tenants\`);`}
+        if (!response.ok) {
+            throw new Error(\`Failed to fetch tenants: \${response.statusText}\`);
+        }
+        const responseData = await response.json();
+        if (responseData && responseData.status === "OK" && Array.isArray(responseData.tenants)) {
+            return responseData.tenants as Tenant[];
+        } else if (Array.isArray(responseData)) {
+             return responseData as Tenant[];
+        }
+        console.error("Unexpected response format from /tenants:", responseData);
+        throw new Error("Failed to parse tenants data from server.");
+    } catch (error) {
+        console.error("Error fetching tenants:", error);
+        return [];
+    }
+};
+
+const TenantSwitcherFooter = () => {
+    const [currentTenantId, setCurrentTenantId] = useState<string>("public");
+    const [showTenantSwitcher, setShowTenantSwitcher] = useState(false);
+    const [tenants, setTenants] = useState<Tenant[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function setup() {
+            setLoading(true);
+
+            const storedTenantId = localStorage.getItem("tenantId");
+            if (storedTenantId && storedTenantId !== currentTenantId) {
+                setCurrentTenantId(storedTenantId);
+            }
+
+            try {
+                const loadedTenants = await tenantLoader();
+                setTenants(loadedTenants);
+            } catch (err) {
+                console.error("Error loading tenants:", err);
+                setError(err instanceof Error ? err.message : "Failed to load tenants");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        setup();
+
+    }, []);
+
+    const openTenantModal = () => {
+        setShowTenantSwitcher(true);
+    };
+
+    const closeTenantModal = () => {
+        setShowTenantSwitcher(false);
+    };
+
+    const selectTenant = (tenantId: string) => {
+        localStorage.setItem("tenantId", tenantId);
+        setCurrentTenantId(tenantId);
+        closeTenantModal();
+        window.location.href = "/auth";
+    };
+
+    return (
+        <>
+            <div id="st-tenant-selector-footer">
+                <span id="st-current-tenant-display">Current Tenant: {currentTenantId || 'None'}</span>
+                <button id="st-switch-tenant-btn" onClick={openTenantModal}>
+                    Switch Tenant
+                </button>
+            </div>
+            <div
+                id="st-tenant-modal-backdrop"
+                onClick={closeTenantModal}
+                style={{ display: showTenantSwitcher ? 'flex' : 'none' }}
+            >
+                <div id="st-tenant-modal" onClick={(e) => e.stopPropagation()}>
+                    <button id="st-tenant-modal-close" title="Close" onClick={closeTenantModal}>&times;</button>
+                        <h3>Select Tenant</h3>
+                        <ul id="st-tenant-list">
+                            {loading ? (
+                                <li>Loading tenants...</li>
+                            ) : error ? (
+                                <li>{error}</li>
+                            ) : tenants.length === 0 ? (
+                                <li>No tenants available or failed to load.</li>
+                            ) : (
+                                tenants.map((tenant) => (
+                                    <li
+                                        key={tenant.tenantId}
+                                        data-tenant-id={tenant.tenantId}
+                                        onClick={() => selectTenant(tenant.tenantId)}
+                                    >
+                                        {tenant.tenantId}
+                                    </li>
+                                ))
+                            )}
+                        </ul>
+                    </div>
+                </div>
+        </>
+    );
+};
+
+`
+        : ""}
+
 export const ComponentWrapper = (props: { children: JSX.Element }): JSX.Element => {
-    ${
-        configType === "passwordless" ||
-        configType === "thirdpartypasswordless" ||
-        configType === "all_auth" ||
-        userArguments?.secondfactors?.some(
-            (factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")
-        )
-            ? `return (
+    let childrenToRender = props.children;
+
+    ${recipes.includes("passwordless") &&
+        (configType === "passwordless" ||
+            configType === "thirdpartypasswordless" ||
+            configType === "all_auth" ||
+            configType === "multitenancy" ||
+            userArguments?.secondfactors?.some((factor) => factor.includes("email") || factor.includes("phone") || factor.includes("link")))
+        ? `childrenToRender = (
         <PasswordlessComponentsOverrideProvider
             components={{
-                PasswordlessUserInputCodeFormFooter_Override: ({ DefaultComponent, ...props }) => {
-                    const loginAttemptInfo = props.loginAttemptInfo;
+                PasswordlessUserInputCodeFormFooter_Override: ({ DefaultComponent, ...cProps }) => {
+                    const loginAttemptInfo = cProps.loginAttemptInfo;
                     let showQuotaMessage = false;
 
                     if (loginAttemptInfo.contactMethod === "PHONE") {
@@ -368,7 +436,7 @@ export const ComponentWrapper = (props: { children: JSX.Element }): JSX.Element 
                                 width: "100%",
                             }}
                         >
-                            <DefaultComponent {...props} />
+                            <DefaultComponent {...cProps} />
                             {showQuotaMessage && (
                                 <div
                                     style={{
@@ -401,8 +469,15 @@ export const ComponentWrapper = (props: { children: JSX.Element }): JSX.Element 
             {props.children}
         </PasswordlessComponentsOverrideProvider>
     );`
-            : `return props.children;`
-    }
-};`;
+        : ``}
+    ${configType === "multitenancy"
+        ? `return (
+        <>
+            {childrenToRender}
+            <TenantSwitcherFooter />
+        </>
+    );`
+        : `return childrenToRender;`}
+}`;
     return template;
 };

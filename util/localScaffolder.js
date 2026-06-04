@@ -1,10 +1,12 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { setupProject } from "../lib/ts/utils";
+import { setupProject } from "../lib/ts/utils.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const BOILERPLATE_DIR = path.join(__dirname, "..", "boilerplate");
+const isRunningFromBuild = __filename.includes(path.join("lib", "build"));
+const projectRoot = isRunningFromBuild ? path.resolve(__dirname, "..", "..", "..") : path.resolve(__dirname, "..");
+const BOILERPLATE_DIR = path.join(projectRoot, "boilerplate");
 function copyDir(src, dest, filter) {
     if (!fs.existsSync(dest)) {
         fs.mkdirSync(dest, { recursive: true });
@@ -18,7 +20,8 @@ function copyDir(src, dest, filter) {
         }
         if (entry.isDirectory()) {
             copyDir(srcPath, destPath, filter);
-        } else {
+        }
+        else {
             fs.copyFileSync(srcPath, destPath);
         }
     }
@@ -58,9 +61,7 @@ export async function downloadAppLocally(locations, folderName) {
     const isFullStack = locations.frontend === locations.backend;
     if (isFullStack) {
         if (locations.frontend.startsWith("http://") || locations.frontend.startsWith("https://")) {
-            throw new Error(
-                `Cannot use local scaffolding for external template URL: ${locations.frontend}. Please run without USE_LOCAL_TEMPLATES=true.`
-            );
+            throw new Error(`Cannot use local scaffolding for external template URL: ${locations.frontend}. Please run without USE_LOCAL_TEMPLATES=true.`);
         }
         const templatePath = getLocalTemplatePath(locations.frontend);
         copyDir(templatePath, projectDir);
@@ -69,16 +70,13 @@ export async function downloadAppLocally(locations, folderName) {
             console.log("Template source:", templatePath);
             console.log("Project directory:", projectDir);
         }
-    } else {
+    }
+    else {
         if (locations.frontend.startsWith("http://") || locations.frontend.startsWith("https://")) {
-            throw new Error(
-                `Cannot use local scaffolding for external template URL: ${locations.frontend}. Please run without USE_LOCAL_TEMPLATES=true.`
-            );
+            throw new Error(`Cannot use local scaffolding for external template URL: ${locations.frontend}. Please run without USE_LOCAL_TEMPLATES=true.`);
         }
         if (locations.backend.startsWith("http://") || locations.backend.startsWith("https://")) {
-            throw new Error(
-                `Cannot use local scaffolding for external template URL: ${locations.backend}. Please run without USE_LOCAL_TEMPLATES=true.`
-            );
+            throw new Error(`Cannot use local scaffolding for external template URL: ${locations.backend}. Please run without USE_LOCAL_TEMPLATES=true.`);
         }
         const frontendSrc = getLocalTemplatePath(locations.frontend);
         const backendSrc = getLocalTemplatePath(locations.backend);
@@ -120,7 +118,8 @@ export function getLocalPrebuiltUIBundleUrl() {
 export async function downloadAppFromLocal(folderLocations, appname) {
     try {
         await downloadAppLocally(folderLocations, appname);
-    } catch (e) {
+    }
+    catch (e) {
         fs.rmSync(`${appname}/`, {
             recursive: true,
             force: true,

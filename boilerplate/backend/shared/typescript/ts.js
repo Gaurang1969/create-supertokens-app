@@ -1,11 +1,10 @@
-import { configToRecipes } from "../../../../lib/ts/templateBuilder/constants";
-import { config } from "../../../shared/config/base";
-import { getAppInfo } from "../../../shared/config/appInfo";
-import { thirdPartyLoginProviders } from "../../../backend/shared/config/oAuthProviders";
+import { configToRecipes } from "../../../../lib/ts/templateBuilder/constants.js";
+import { config } from "../../../shared/config/base.js";
+import { getAppInfo } from "../../../shared/config/appInfo.js";
+import { thirdPartyLoginProviders } from "../../../backend/shared/config/oAuthProviders.js";
 export const tsRecipeImports = {
     emailPassword: 'import EmailPassword from "supertokens-node/recipe/emailpassword";',
-    thirdParty:
-        'import ThirdParty from "supertokens-node/recipe/thirdparty";\nimport type { ProviderInput } from "supertokens-node/recipe/thirdparty/types";',
+    thirdParty: 'import ThirdParty from "supertokens-node/recipe/thirdparty";\nimport type { ProviderInput } from "supertokens-node/recipe/thirdparty/types";',
     passwordless: 'import Passwordless from "supertokens-node/recipe/passwordless";',
     session: 'import Session from "supertokens-node/recipe/session";',
     dashboard: 'import Dashboard from "supertokens-node/recipe/dashboard";',
@@ -13,6 +12,7 @@ export const tsRecipeImports = {
     multiFactorAuth: 'import MultiFactorAuth from "supertokens-node/recipe/multifactorauth";',
     accountLinking: 'import AccountLinking from "supertokens-node/recipe/accountlinking";',
     emailVerification: 'import EmailVerification from "supertokens-node/recipe/emailverification";',
+    webauthn: 'import WebAuthN from "supertokens-node/recipe/webauthn";',
     totp: 'import TOTP from "supertokens-node/recipe/totp";',
     multitenancy: 'import Multitenancy from "supertokens-node/recipe/multitenancy";',
 };
@@ -22,66 +22,69 @@ export const tsRecipeInits = {
             signInAndUpFeature: {
                 providers: [
                     ${providers
-                        .map(
-                            (provider) => `{
+        .map((provider) => `{
                         config: {
                             thirdPartyId: "${provider.id}",
                             clients: [
                                 {
                                     clientId: "${provider.clientId}",
                                     clientSecret: "${provider.clientSecret}",
-                                    ${
-                                        provider.additionalConfig
-                                            ? `additionalConfig: ${JSON.stringify(provider.additionalConfig, null, 36)}`
-                                            : ""
-                                    }
+                                    ${provider.additionalConfig
+        ? `additionalConfig: ${JSON.stringify(provider.additionalConfig, null, 36)}`
+        : ""}
                                 },
                             ],
                         },
-                    }`
-                        )
-                        .join(",\n                    ")}
+                    }`)
+        .join(",\n                    ")}
                 ],
             },
         })`,
     passwordless: (userArguments) => {
         let contactMethod = "EMAIL";
         let flowType;
-        const hasLinkEmail =
-            userArguments?.firstfactors?.includes("link-email") || userArguments?.secondfactors?.includes("link-email");
-        const hasLinkPhone =
-            userArguments?.firstfactors?.includes("link-phone") || userArguments?.secondfactors?.includes("link-phone");
-        const hasOtpEmail =
-            userArguments?.firstfactors?.includes("otp-email") || userArguments?.secondfactors?.includes("otp-email");
-        const hasOtpPhone =
-            userArguments?.firstfactors?.includes("otp-phone") || userArguments?.secondfactors?.includes("otp-phone");
+        const hasLinkEmail = userArguments?.firstfactors?.includes("link-email") || userArguments?.secondfactors?.includes("link-email");
+        const hasLinkPhone = userArguments?.firstfactors?.includes("link-phone") || userArguments?.secondfactors?.includes("link-phone");
+        const hasOtpEmail = userArguments?.firstfactors?.includes("otp-email") || userArguments?.secondfactors?.includes("otp-email");
+        const hasOtpPhone = userArguments?.firstfactors?.includes("otp-phone") || userArguments?.secondfactors?.includes("otp-phone");
         if ((hasLinkEmail || hasOtpEmail) && (hasLinkPhone || hasOtpPhone)) {
             contactMethod = "EMAIL_OR_PHONE";
-        } else if (hasLinkPhone || hasOtpPhone) {
+        }
+        else if (hasLinkPhone || hasOtpPhone) {
             contactMethod = "PHONE";
-        } else {
+        }
+        else {
             contactMethod = "EMAIL";
         }
         const hasLinkFactor = hasLinkEmail || hasLinkPhone;
         const hasOtpFactor = hasOtpEmail || hasOtpPhone;
         if (hasLinkFactor && hasOtpFactor) {
             flowType = "USER_INPUT_CODE_AND_MAGIC_LINK";
-        } else if (hasLinkFactor) {
+        }
+        else if (hasLinkFactor) {
             flowType = "MAGIC_LINK";
-        } else if (hasOtpFactor) {
+        }
+        else if (hasOtpFactor) {
             flowType = "USER_INPUT_CODE";
         }
-        // Default flowType if none determined from factors
         if (flowType === undefined) {
             flowType = "USER_INPUT_CODE_AND_MAGIC_LINK";
         }
+        let testConf = "";
+        if (process.env.TEST_MODE === "testing") {
+            testConf = `,
+            getCustomUserInputCode: async (userContext: any) => {
+                return "123456";
+            }`;
+        }
         return `Passwordless.init({
     contactMethod: "${contactMethod}",
-    flowType: "${flowType}"
+    flowType: "${flowType}"${testConf}
 })`;
     },
     session: () => `Session.init()`,
     dashboard: () => `Dashboard.init()`,
+    webauthn: () => `WebAuthN.init()`,
     userRoles: () => `UserRoles.init()`,
     multiFactorAuth: (firstFactors, secondFactors) => {
         const firstFactorsStr = (firstFactors || ["thirdparty", "emailpassword"])
@@ -160,8 +163,7 @@ export const tsRecipeInits = {
 };
 export const generateTypeScriptTemplate = ({ configType, userArguments, isFullStack = false }, _framework) => {
     const recipes = configToRecipes[configType];
-    const hasMFA =
-        configType === "multifactorauth" || (userArguments?.secondfactors && userArguments.secondfactors.length > 0);
+    const hasMFA = configType === "multifactorauth" || (userArguments?.secondfactors && userArguments.secondfactors.length > 0);
     if (hasMFA && !recipes.includes("multiFactorAuth")) {
         recipes.push("multiFactorAuth");
     }
@@ -174,16 +176,17 @@ export const generateTypeScriptTemplate = ({ configType, userArguments, isFullSt
     if (hasMFA && !recipes.includes("accountLinking")) {
         recipes.push("accountLinking");
     }
-    const hasPasswordlessFactor =
-        userArguments?.firstfactors?.some((f) => f.startsWith("otp-") || f.startsWith("link-")) ||
+    const hasPasswordlessFactor = userArguments?.firstfactors?.some((f) => f.startsWith("otp-") || f.startsWith("link-")) ||
         userArguments?.secondfactors?.some((f) => f.startsWith("otp-") || f.startsWith("link-"));
     if (hasPasswordlessFactor && !recipes.includes("passwordless")) {
         recipes.push("passwordless");
     }
-    // For multitenancy, ensure backend is initialized with potential first-factor recipes
     if (configType === "multitenancy") {
         if (!recipes.includes("emailPassword")) {
             recipes.push("emailPassword");
+        }
+        if (!recipes.includes("webauthn")) {
+            recipes.push("webauthn");
         }
         if (!recipes.includes("thirdParty")) {
             recipes.push("thirdParty");
@@ -191,7 +194,6 @@ export const generateTypeScriptTemplate = ({ configType, userArguments, isFullSt
         if (!recipes.includes("passwordless")) {
             recipes.push("passwordless");
         }
-        // Also ensure MFA recipes are included if needed, as multitenancy might use them
         if (hasMFA && !recipes.includes("multiFactorAuth")) {
             recipes.push("multiFactorAuth");
         }
@@ -201,7 +203,6 @@ export const generateTypeScriptTemplate = ({ configType, userArguments, isFullSt
         if (hasMFA && !recipes.includes("emailVerification")) {
             recipes.push("emailVerification");
         }
-        // AccountLinking might also be relevant depending on tenant config
         if (hasMFA && !recipes.includes("accountLinking")) {
             recipes.push("accountLinking");
         }
@@ -219,41 +220,38 @@ export const generateTypeScriptTemplate = ({ configType, userArguments, isFullSt
     const sessionInitFunc = tsRecipeInits.session;
     const recipeInits = initRecipes
         .map((recipe) => {
-            switch (recipe) {
-                case "thirdParty":
-                    const providersToUse = userArguments?.providers
-                        ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
-                        : thirdPartyLoginProviders;
-                    return tsRecipeInits.thirdParty(providersToUse);
-                case "multiFactorAuth":
-                    return tsRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
-                case "accountLinking":
-                    return tsRecipeInits.accountLinking(hasMFA ?? false);
-                case "passwordless":
-                case "passwordless":
-                    return tsRecipeInits.passwordless(userArguments);
-                case "emailVerification":
-                    return tsRecipeInits.emailVerification();
-                case "emailPassword":
-                case "dashboard":
-                case "userRoles":
-                case "totp":
-                case "multitenancy":
-                    const initFunc = tsRecipeInits[recipe];
-                    if (typeof initFunc === "function") {
-                        return initFunc();
-                    }
-                    console.warn(`No initializer function found for recipe: ${recipe}`);
-                    return null;
-                default:
-                    console.warn(`Unknown recipe encountered: ${recipe}`);
-                    return null;
-            }
-        })
+        switch (recipe) {
+            case "thirdParty":
+                const providersToUse = userArguments?.providers
+                    ? thirdPartyLoginProviders.filter((p) => userArguments.providers.includes(p.id))
+                    : thirdPartyLoginProviders;
+                return tsRecipeInits.thirdParty(providersToUse);
+            case "multiFactorAuth":
+                return tsRecipeInits.multiFactorAuth(userArguments?.firstfactors, userArguments?.secondfactors);
+            case "accountLinking":
+                return tsRecipeInits.accountLinking(hasMFA ?? false);
+            case "passwordless":
+                return tsRecipeInits.passwordless(userArguments);
+            case "emailVerification":
+                return tsRecipeInits.emailVerification();
+            case "emailPassword":
+            case "dashboard":
+            case "userRoles":
+            case "totp":
+            case "webauthn":
+            case "multitenancy":
+                const initFunc = tsRecipeInits[recipe];
+                if (typeof initFunc === "function") {
+                    return initFunc();
+                }
+                throw new Error(`No initializer function found for recipe: ${recipe}`);
+            default:
+                throw new Error(`Unknown recipe encountered: ${recipe}`);
+        }
+    })
         .filter(Boolean);
     recipeInits.push(sessionInitFunc());
-    let template =
-        imports +
+    let template = imports +
         "\n" +
         `import type { TypeInput } from "supertokens-node/types";
 
@@ -277,8 +275,8 @@ export function getWebsiteDomain() {
         appName: "${appInfo.appName}",
         apiDomain: getApiDomain(),
         websiteDomain: getWebsiteDomain(),
-        apiBasePath: "${appInfo.apiBasePath}", 
-        websiteBasePath: "${appInfo.websiteBasePath}", 
+        apiBasePath: "${appInfo.apiBasePath}",
+        websiteBasePath: "${appInfo.websiteBasePath}",
     },
     recipeList: [
         ${recipeInits.join(",\n        ")}
